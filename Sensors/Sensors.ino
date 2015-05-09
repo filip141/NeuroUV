@@ -9,29 +9,39 @@
 #include <controlvehicle/ardu_imu.h>
 #include <controlvehicle/joy_control_msg.h>
 #include <controlvehicle/temperature.h>
+#include <controlvehicle/Maxsonar.h>
 
 //Settings gyro defined
 #define L3G4200D_2000DPS 0x20
 #define dpsPerDigit .07f
 #define time_step 10
 #define temstep 5000
+#define sonstep 49
+
+//Define pw pins
+#define pwPin 7
+#define pwPin2 4
+#define pwPin3 8
+#define pwPin4 2
 //#define DEBUG_DATA
+//#define DEBUG_Serial
 
 ros::NodeHandle  nh;
 
 //Messages
 controlvehicle::ardu_imu imu_msg;
 controlvehicle::temperature tem_msg;
+controlvehicle::Maxsonar son_msg;
 
 
 // Declare topic name in PROGMEM
 const char imu_topic[]  PROGMEM  = { "imu" };
 const char con_topic[]  PROGMEM  = { "joyvehicle" };
 
-
 //Publishers
 ros::Publisher pub_imu(FCAST(imu_topic), &imu_msg);
 ros::Publisher pub_tem("temperature", &tem_msg);
+ros::Publisher pub_son("maxsonar", &son_msg);
 
 ////////Gyroscope
 L3G4200D gyro;
@@ -115,10 +125,103 @@ void tempsensorsVelocity(){
   
 }
 
+//Sonar counter
+byte sonnum = 1;
+byte periodnum = 1;
+
+
+//Fill sonar msg
+void sonarsensorsVelocity(){
+  
+  if(sonnum == 1){
+ 
+    if(periodnum){
+      digitalWrite(5, HIGH);
+      periodnum = 0;
+    }
+    else
+    {
+       son_msg.sonar1 = pulseIn(pwPin, HIGH)/57.874015748031496;
+       digitalWrite(5, LOW);
+       periodnum = 1;
+       sonnum = 2 ;
+    }
+   } 
+    if(sonnum == 2) {
+    
+    if(periodnum){
+      digitalWrite(6, HIGH);
+      periodnum = 0;
+    }
+    else
+    {
+       son_msg.sonar2 = pulseIn(pwPin2, HIGH)/57.874015748031496;
+       digitalWrite(6, LOW);
+       periodnum = 1;
+       sonnum = 3;
+    }
+  }
+  if(sonnum == 3){
+    
+    if(periodnum){
+      digitalWrite(9, HIGH);
+      periodnum = 0;
+    }
+    else
+    {
+       son_msg.sonar3 = pulseIn(pwPin3, HIGH)/57.874015748031496;
+       digitalWrite(9, LOW);
+       periodnum = 1;
+       sonnum = 4;
+    }
+  } 
+  if(sonnum == 4){
+    
+    if(periodnum){
+      digitalWrite(3, HIGH);
+      periodnum = 0;
+    }
+    else
+    {
+
+       son_msg.sonar4 = pulseIn(pwPin4, HIGH)/58;
+       digitalWrite(3, LOW);
+       periodnum = 1;
+       sonnum = 1;
+       
+
+    }
+  }
+
+}
+
+
 
 void setup()
 { 
-
+  #ifdef DEBUG_Serial
+  Serial.begin(9600);
+  
+  Serial.println(F("Arduino in debugging mode"));
+  Serial.println("Free RAM Space : " + String(freeRam()) + " bytes");
+  #endif
+  
+  //Initialize trigger pins and pw pins and wait for calibration
+  pinMode(5, OUTPUT);
+  pinMode(6, OUTPUT);
+  pinMode(9, OUTPUT);
+  pinMode(3, OUTPUT);
+  pinMode(pwPin, INPUT);
+  pinMode(pwPin2, INPUT);
+  pinMode(pwPin3, INPUT);
+  pinMode(pwPin4, INPUT);
+     
+  digitalWrite(5, LOW);
+  digitalWrite(6, LOW);
+  digitalWrite(9, LOW);
+  digitalWrite(3, LOW);
+  delay(200);
+  
   //Begin sensor objects
   Wire.begin();  
   accelerometer.begin();
@@ -135,25 +238,32 @@ void setup()
   compass.setSamples(HMC5883L_SAMPLES_8);
   compass.setOffset(0, 0); 
   
+  #ifndef DEBUG_Serial
   //Ros node initialization
   nh.initNode();
+  
+  #endif
   
   
   //Ros settings
   nh.advertise(pub_imu);
   nh.subscribe(rosTopic);
   nh.advertise(pub_tem); 
+  nh.advertise(pub_son); 
   nh.getHardware()->setBaud(57600);
- 
+  
 }
 
 //Pseudo Arduino timer
 long rangeMillis;
 long rtemMillis;
+long rsonMillis;
 
 void loop() {
-  
+
+#ifndef DEBUG_Serial  
 nh.spinOnce();
+#endif
 
 if (millis() >= rangeMillis) {  
         
@@ -169,11 +279,26 @@ if (millis() >= rtemMillis) {
         rtemMillis = millis() + temstep;
         tempsensorsVelocity();
         pub_tem.publish(&tem_msg);
-            
+           
 }
 
 
+if (millis() >= rsonMillis) {
+ 
+        rsonMillis = millis() + sonstep;
+        nh.spinOnce();
+        sonarsensorsVelocity();
+        if(!periodnum) 
+          pub_son.publish(&son_msg);
+        nh.spinOnce();
+    
+           
+}
+
+
+
 #ifdef DEBUG_DATA
+#ifndef DEBUG_Serial
 
 char aaa[10];
 itoa(freeRam(), aaa, 10);
@@ -181,8 +306,9 @@ nh.loginfo(F("Free RAM space : "));
 nh.loginfo(aaa);
 
 #endif
+#endif
 
-delay(3);
+//delay(3);
 
 }
 
