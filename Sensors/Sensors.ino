@@ -19,10 +19,10 @@
 #define sonstep 49
 
 //Define pw pins
-#define pwPin 7
-#define pwPin2 4
-#define pwPin3 8
-#define pwPin4 2
+#define pwPin 3
+#define pwPin2 5
+#define pwPin3 6
+#define pwPin4 11
 //#define DEBUG_DATA
 //#define DEBUG_Serial
 
@@ -66,27 +66,35 @@ int freeRam()
 }
 #endif
 
+int pspeed;
+int pPowerLR;
+
 //Subscriber callback function
 void DrivingHandle( const controlvehicle::joy_control_msg& drivingArgs){
   
     int var = drivingArgs.sequence;
     int speed = 4*drivingArgs.speed;
     int PowerLR = 4*drivingArgs.powerLR;
-    switch (var) {
-      case 1:
-        rb.stopDriving();
-        break;
-      case 2:
-        rb.goStraight(speed);
-        break;
-      case 3:
-        rb.turnAround(PowerLR);
-        break;
-      case 4:
-        rb.turnLeftRight(speed, PowerLR);
-        break;
-      default: 
-        break;
+    if((abs(speed-pspeed)>60) || (abs(PowerLR-pPowerLR)>60)){
+      switch (var) {
+        case 1:
+          rb.stopDriving();
+          break;
+        case 2:
+          rb.goStraight(speed);
+          nh.loginfo("GO!");
+          break;
+        case 3:
+          rb.turnAround(PowerLR);
+          break;
+        case 4:
+          rb.turnLeftRight(speed, PowerLR);
+          break;
+        default: 
+          break;
+      }
+      pspeed = speed ; 
+      pPowerLR = PowerLR;
   }
 }
 
@@ -136,13 +144,15 @@ void sonarsensorsVelocity(){
   if(sonnum == 1){
  
     if(periodnum){
-      digitalWrite(5, HIGH);
+      digitalWrite(12, HIGH);
       periodnum = 0;
     }
     else
     {
        son_msg.sonar1 = pulseIn(pwPin, HIGH)/57.874015748031496;
-       digitalWrite(5, LOW);
+       //Serial.print("Sonar number 1 : "); 
+       //Serial.println(son_msg.sonar1);
+       digitalWrite(12, LOW);
        periodnum = 1;
        sonnum = 2 ;
     }
@@ -150,13 +160,15 @@ void sonarsensorsVelocity(){
     if(sonnum == 2) {
     
     if(periodnum){
-      digitalWrite(6, HIGH);
+      digitalWrite(13, HIGH);
       periodnum = 0;
     }
     else
     {
        son_msg.sonar2 = pulseIn(pwPin2, HIGH)/57.874015748031496;
-       digitalWrite(6, LOW);
+       //Serial.print("Sonar number 2 : "); 
+       //Serial.println(son_msg.sonar2);
+       digitalWrite(13, LOW);
        periodnum = 1;
        sonnum = 3;
     }
@@ -164,13 +176,15 @@ void sonarsensorsVelocity(){
   if(sonnum == 3){
     
     if(periodnum){
-      digitalWrite(9, HIGH);
+      digitalWrite(16, HIGH);
       periodnum = 0;
     }
     else
     {
        son_msg.sonar3 = pulseIn(pwPin3, HIGH)/57.874015748031496;
-       digitalWrite(9, LOW);
+       //Serial.print("Sonar number 3 : "); 
+       //Serial.println(son_msg.sonar3);
+       digitalWrite(16, LOW);
        periodnum = 1;
        sonnum = 4;
     }
@@ -178,14 +192,16 @@ void sonarsensorsVelocity(){
   if(sonnum == 4){
     
     if(periodnum){
-      digitalWrite(3, HIGH);
+      digitalWrite(17, HIGH);
       periodnum = 0;
     }
     else
     {
 
        son_msg.sonar4 = pulseIn(pwPin4, HIGH)/58;
-       digitalWrite(3, LOW);
+       //Serial.print("Sonar number 4 : "); 
+       //Serial.println(son_msg.sonar4);
+       digitalWrite(17, LOW);
        periodnum = 1;
        sonnum = 1;
        
@@ -207,19 +223,19 @@ void setup()
   #endif
   
   //Initialize trigger pins and pw pins and wait for calibration
-  pinMode(5, OUTPUT);
-  pinMode(6, OUTPUT);
-  pinMode(9, OUTPUT);
-  pinMode(3, OUTPUT);
+  pinMode(12, OUTPUT);
+  pinMode(13, OUTPUT);
+  pinMode(16, OUTPUT);
+  pinMode(17, OUTPUT);
   pinMode(pwPin, INPUT);
   pinMode(pwPin2, INPUT);
   pinMode(pwPin3, INPUT);
   pinMode(pwPin4, INPUT);
      
-  digitalWrite(5, LOW);
-  digitalWrite(6, LOW);
-  digitalWrite(9, LOW);
-  digitalWrite(3, LOW);
+  digitalWrite(12, LOW);
+  digitalWrite(13, LOW);
+  digitalWrite(16, LOW);
+  digitalWrite(17, LOW);
   delay(200);
   
   //Begin sensor objects
@@ -270,7 +286,8 @@ if (millis() >= rangeMillis) {
         rangeMillis = millis() + time_step;
         imu_msg.header.frame_id =  "imu";
         sensorsVelocity();
-        pub_imu.publish(&imu_msg);           
+        pub_imu.publish(&imu_msg);   
+        nh.spinOnce(); 
 }
 
 
@@ -279,6 +296,7 @@ if (millis() >= rtemMillis) {
         rtemMillis = millis() + temstep;
         tempsensorsVelocity();
         pub_tem.publish(&tem_msg);
+        nh.spinOnce();
            
 }
 
@@ -308,7 +326,7 @@ nh.loginfo(aaa);
 #endif
 #endif
 
-//delay(3);
+//delay(2);
 
 }
 

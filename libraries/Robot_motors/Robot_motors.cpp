@@ -1,6 +1,6 @@
 #include "Robot_motors.h"
 
-
+//#define DIAGCON
 
 //Constructor accept minimal value of speed when wheels still moving 
 //it depends on frictions and could be usefull to keep your tires in good condition
@@ -13,8 +13,11 @@ RobotControl::RobotControl(int _Min){
 
 //Error Function if motors fault it sends error message via 
 //Serial interface.
+
+#ifdef DIAGCON
 void RobotControl::stopIfFault()
 {
+	
   if (md.getM1Fault())
   {
     while(1);
@@ -24,6 +27,7 @@ void RobotControl::stopIfFault()
     while(1);
   }
 }
+#endif
 
 //Function to drive vehicle forward. It accepts values between
 //400 and - 400 correspond to forward and backward move 
@@ -34,7 +38,9 @@ int RobotControl::goStraight(int Speed)
       for(leftSpeed; leftSpeed <= Speed; ++leftSpeed){
         rightSpeed = leftSpeed;
         md.setSpeeds(leftSpeed,rightSpeed);
+	#ifdef DIAGCON
         stopIfFault();
+	#endif
       }
       leftSpeed--;
     }
@@ -42,7 +48,9 @@ int RobotControl::goStraight(int Speed)
       for(leftSpeed; leftSpeed >= Speed; leftSpeed--){
         rightSpeed = leftSpeed;
         md.setSpeeds(leftSpeed,rightSpeed);
+        #ifdef DIAGCON
         stopIfFault();
+	#endif
        }
        leftSpeed++;
    }
@@ -51,7 +59,9 @@ int RobotControl::goStraight(int Speed)
      if(leftSpeed < rightSpeed){
        for(leftSpeed; leftSpeed <= rightSpeed; leftSpeed++){
            md.setSpeeds(leftSpeed,rightSpeed);
+       	   #ifdef DIAGCON
            stopIfFault();
+	   #endif
        }
      leftSpeed--;
      goStraight(Speed);
@@ -59,7 +69,9 @@ int RobotControl::goStraight(int Speed)
      else{
          for(rightSpeed; rightSpeed <= leftSpeed; rightSpeed++){
             md.setSpeeds(leftSpeed,rightSpeed);
+            #ifdef DIAGCON
             stopIfFault();
+	    #endif
          }
      rightSpeed--;
      goStraight(Speed);
@@ -77,7 +89,9 @@ void RobotControl::stopDriving(void)
     while(leftSpeed !=0 || rightSpeed != 0)
     {
         md.setSpeeds(leftSpeed,rightSpeed);
+        #ifdef DIAGCON
         stopIfFault();
+	#endif
         if(leftSpeed !=0)
         {
         leftSpeed--;
@@ -94,7 +108,9 @@ void RobotControl::stopDriving(void)
     while(leftSpeed !=0 || rightSpeed != 0)
     {
         md.setSpeeds(leftSpeed,rightSpeed);
+        #ifdef DIAGCON
         stopIfFault();
+	#endif
         if(leftSpeed !=0)
         {
         leftSpeed--;
@@ -111,7 +127,9 @@ void RobotControl::stopDriving(void)
     while(leftSpeed !=0 || rightSpeed != 0)
     {
         md.setSpeeds(leftSpeed,rightSpeed);
+        #ifdef DIAGCON
         stopIfFault();
+	#endif
         if(leftSpeed !=0)
         {
         leftSpeed++;
@@ -128,7 +146,9 @@ void RobotControl::stopDriving(void)
     while(leftSpeed !=0 || rightSpeed != 0)
     {
         md.setSpeeds(leftSpeed,rightSpeed);
+        #ifdef DIAGCON
         stopIfFault();
+	#endif
         if(leftSpeed !=0)
         {
         leftSpeed++;
@@ -151,7 +171,9 @@ void RobotControl::turnAround(int turningPower){
     for (leftSpeed; leftSpeed <= turningPower; leftSpeed++)
     {
       md.setSpeeds(leftSpeed,rightSpeed);
-      stopIfFault();
+        #ifdef DIAGCON
+        stopIfFault();
+	#endif
       rightSpeed--;
     }
   }
@@ -160,7 +182,9 @@ void RobotControl::turnAround(int turningPower){
     for (leftSpeed; leftSpeed >= turningPower; leftSpeed--)
     {
       md.setSpeeds(leftSpeed,rightSpeed);
-      stopIfFault();
+        #ifdef DIAGCON
+        stopIfFault();
+	#endif
       rightSpeed++;
     }
   } 
@@ -182,7 +206,9 @@ void RobotControl::turnLeftRight(int Speed, int PowerLR)
       while(leftSpeed != BreakPWR || rightSpeed != Speed)
       {
         md.setSpeeds(leftSpeed,rightSpeed);
+        #ifdef DIAGCON
         stopIfFault();
+	#endif
         if(leftSpeed !=BreakPWR)
         {
           if(leftSpeed < BreakPWR)
@@ -220,7 +246,9 @@ void RobotControl::turnLeftRight(int Speed, int PowerLR)
       while(rightSpeed != BreakPWR || leftSpeed != Speed)
       {
         md.setSpeeds(leftSpeed,rightSpeed);
+        #ifdef DIAGCON
         stopIfFault();
+	#endif
         if(rightSpeed !=BreakPWR)
         {
           if(rightSpeed < BreakPWR)
@@ -256,7 +284,9 @@ void RobotControl::turnLeftRight(int Speed, int PowerLR)
       while(rightSpeed != BreakPWR || leftSpeed != Speed)
       {
         md.setSpeeds(leftSpeed,rightSpeed);
+        #ifdef DIAGCON
         stopIfFault();
+	#endif
         if(rightSpeed != BreakPWR)
         {
           if(rightSpeed < BreakPWR)
@@ -292,7 +322,9 @@ void RobotControl::turnLeftRight(int Speed, int PowerLR)
       while(leftSpeed != BreakPWR || rightSpeed != Speed)
       {
         md.setSpeeds(leftSpeed,rightSpeed);
+        #ifdef DIAGCON
         stopIfFault();
+	#endif
         if(leftSpeed != BreakPWR)
         {
           if(leftSpeed < BreakPWR)

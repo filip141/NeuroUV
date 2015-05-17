@@ -213,6 +213,7 @@ class ADXL345
     private:
 	Vector r;
 	Vector n;
+	Vector f;
 	
 	void writeRegister8(uint8_t reg, uint8_t value);
 	uint8_t readRegister8(uint8_t reg);
