@@ -1,0 +1,8 @@
+prefix=/home/pi/catkin_ws/devel
+
+Name: robot_upstart
+Description: Description of robot_upstart
+Version: 0.1.2
+Cflags: 
+Libs: -L/home/pi/catkin_ws/devel/lib 
+Requires: 

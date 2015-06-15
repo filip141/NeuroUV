@@ -1,0 +1,14 @@
+<launch>
+
+   <!-- Open Serial Connection with Driver -->
+   <node name="rosserial" pkg="rosserial_python" type="serial_node.py" respawn="true">
+        <param name="port" value="/dev/ttyACM0"/>
+   </node>
+
+  <!-- Robot IMU Sensors -->
+  <node pkg="controlvehicle" name="imu_sensors" type="imu_sensors"  respawn="true"/>
+
+  <!-- Android and desktop application UDP server -->
+  <node pkg="controlvehicle" name="controlvehicle_andro" type="controlserver.py"  respawn="true"/>
+
+</launch>

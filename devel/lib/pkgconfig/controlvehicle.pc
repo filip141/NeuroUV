@@ -1,0 +1,8 @@
+prefix=/home/pi/catkin_ws/devel
+
+Name: controlvehicle
+Description: Description of controlvehicle
+Version: 0.0.0
+Cflags: -I/home/pi/catkin_ws/devel/include -I/home/pi/catkin_ws/src/controlvehicle/include
+Libs: -L/home/pi/catkin_ws/devel/lib 
+Requires: message_runtime roscpp rospy std_msgs

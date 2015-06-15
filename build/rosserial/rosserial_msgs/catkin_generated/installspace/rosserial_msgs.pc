@@ -1,0 +1,8 @@
+prefix=/home/pi/catkin_ws/install
+
+Name: rosserial_msgs
+Description: Description of rosserial_msgs
+Version: 0.6.3
+Cflags: -I/home/pi/catkin_ws/install/include
+Libs: -L/home/pi/catkin_ws/install/lib 
+Requires: message_runtime

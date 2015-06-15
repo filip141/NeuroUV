@@ -1,0 +1,6 @@
+/home/pi/catkin_ws/CMakeFiles/clean_test_results.dir
+/home/pi/catkin_ws/CMakeFiles/doxygen.dir
+/home/pi/catkin_ws/gtest/CMakeFiles/gtest.dir
+/home/pi/catkin_ws/gtest/CMakeFiles/gtest_main.dir
+/home/pi/catkin_ws/CMakeFiles/run_tests.dir
+/home/pi/catkin_ws/CMakeFiles/tests.dir

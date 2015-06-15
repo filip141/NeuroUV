@@ -1,0 +1,1 @@
+/usr/bin/gcc  -fPIC    -shared -Wl,-soname,libcontrolvehicle.so -o /home/pi/catkin_ws/devel/lib/libcontrolvehicle.so CMakeFiles/controlvehicle.dir/src/MadgwickAHRS.c.o 

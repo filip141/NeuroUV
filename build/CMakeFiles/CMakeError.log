@@ -1,0 +1,57 @@
+Determining if the pthread_create exist failed with the following output:
+Change Dir: /home/pi/catkin_ws/build/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec3125606710/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec3125606710.dir/build.make CMakeFiles/cmTryCompileExec3125606710.dir/build
+make[1]: Entering directory '/home/pi/catkin_ws/build/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/pi/catkin_ws/build/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building C object CMakeFiles/cmTryCompileExec3125606710.dir/CheckSymbolExists.c.o
+/usr/bin/gcc    -o CMakeFiles/cmTryCompileExec3125606710.dir/CheckSymbolExists.c.o   -c /home/pi/catkin_ws/build/CMakeFiles/CMakeTmp/CheckSymbolExists.c
+Linking C executable cmTryCompileExec3125606710
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec3125606710.dir/link.txt --verbose=1
+/usr/bin/gcc         CMakeFiles/cmTryCompileExec3125606710.dir/CheckSymbolExists.c.o  -o cmTryCompileExec3125606710 -rdynamic 
+CMakeFiles/cmTryCompileExec3125606710.dir/CheckSymbolExists.c.o: In function `main':
+CheckSymbolExists.c:(.text+0x38): undefined reference to `pthread_create'
+collect2: ld returned 1 exit status
+CMakeFiles/cmTryCompileExec3125606710.dir/build.make:88: recipe for target 'cmTryCompileExec3125606710' failed
+make[1]: Leaving directory '/home/pi/catkin_ws/build/CMakeFiles/CMakeTmp'
+make[1]: *** [cmTryCompileExec3125606710] Error 1
+Makefile:114: recipe for target 'cmTryCompileExec3125606710/fast' failed
+make: *** [cmTryCompileExec3125606710/fast] Error 2
+
+File /home/pi/catkin_ws/build/CMakeFiles/CMakeTmp/CheckSymbolExists.c:
+/* */
+#include <pthread.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef pthread_create
+  return ((int*)(&pthread_create))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the function pthread_create exists in the pthreads failed with the following output:
+Change Dir: /home/pi/catkin_ws/build/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec1360368444/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec1360368444.dir/build.make CMakeFiles/cmTryCompileExec1360368444.dir/build
+make[1]: Entering directory '/home/pi/catkin_ws/build/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/pi/catkin_ws/build/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building C object CMakeFiles/cmTryCompileExec1360368444.dir/CheckFunctionExists.c.o
+/usr/bin/gcc   -DCHECK_FUNCTION_EXISTS=pthread_create   -o CMakeFiles/cmTryCompileExec1360368444.dir/CheckFunctionExists.c.o   -c /usr/share/cmake-2.8/Modules/CheckFunctionExists.c
+Linking C executable cmTryCompileExec1360368444
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec1360368444.dir/link.txt --verbose=1
+/usr/bin/gcc     -DCHECK_FUNCTION_EXISTS=pthread_create    CMakeFiles/cmTryCompileExec1360368444.dir/CheckFunctionExists.c.o  -o cmTryCompileExec1360368444 -rdynamic -lpthreads 
+/usr/bin/ld: cannot find -lpthreads
+collect2: ld returned 1 exit status
+CMakeFiles/cmTryCompileExec1360368444.dir/build.make:88: recipe for target 'cmTryCompileExec1360368444' failed
+make[1]: Leaving directory '/home/pi/catkin_ws/build/CMakeFiles/CMakeTmp'
+make[1]: *** [cmTryCompileExec1360368444] Error 1
+Makefile:114: recipe for target 'cmTryCompileExec1360368444/fast' failed
+make: *** [cmTryCompileExec1360368444/fast] Error 2
+
+
