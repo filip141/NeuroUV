@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">"JoystickViewDemoActivity "</string>
+    <string name="action_settings">Settings</string>
+    <string name="front_lab">wPrzod</string>
+    <string name="front_right_lab">prawoPrzod</string>
+    <string name="right_lab">wPrawo</string>
+    <string name="right_bottom_lab">prawoTyl</string>
+    <string name="bottom_lab">wTyl</string>
+    <string name="bottom_left_lab">lewoTyl</string>
+    <string name="left_lab">wLewo</string>
+    <string name="left_front_lab">lewoPrzod</string>
+    <string name="center_lab">STOP</string>
+    
+    <string name="ok">OK</string>
+    <string name="cancel">CANCEL</string>
+    <string name="name_dialog">STOP</string>
+    <string name="stream_map">Stream/Map</string>
+    <string name="refresh">REFRESH</string>
+    
+    
+    
+		
+</resources>
