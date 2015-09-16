@@ -19,9 +19,7 @@ Created by Filip Bachura, June 29, 2015.
 #include <Wire.h>
 
 //Sensor Libraries
-#include <HMC5883L.h>
-#include <L3G4200D.h>
-#include <ADXL345.h>
+#include <Gy80lib.h>
 #include <BMP085.h>
 #include <Robot_motors.h>
 
@@ -32,21 +30,22 @@ Created by Filip Bachura, June 29, 2015.
 //Messages
 #include <controlvehicle/joy_control_msg.h>
 #include <controlvehicle/temperature.h>
+#include <geometry_msgs/Quaternion.h>
 #include <controlvehicle/Maxsonar.h>
 #include <controlvehicle/ardu_imu.h>
-#include <std_msgs/String.h>
+#include <geometry_msgs/Vector3.h>
 #include <std_msgs/Int8.h>
+#include <std_msgs/String.h>
 
-//Settings gyroscope defined
-#define L3G4200D_2000DPS 0x20
-#define L 0.95
-#define dpsPerDigit .07f
+
+//Time stamps
 #define temstep 5000
 #define debstep 600
 #define batstep 166
 #define errstep 120
 #define sonstep 49
 #define time_step 10
+#define checkstep 250
 
 //Define pw pins
 #define pwPin 3
@@ -54,19 +53,14 @@ Created by Filip Bachura, June 29, 2015.
 #define pwPin3 6
 #define pwPin4 11
 
-extern "C" void TIMER5_COMPA_vect(void) __attribute__ ((signal));
 extern "C" void DrivingHandle( const controlvehicle::joy_control_msg& drivingArgs);
 
 class NeuroUV
 {
 
 	public:
-		// Gyroscope
-		L3G4200D gyro;
-		// Accelerometer
-		ADXL345 accelerometer;
-		// Magnetometer
-		HMC5883L compass;
+		// Gy-80 Sensor library
+		Gy80lib imu;
 		// Barometer
 		BMP085 bmp;
 		// Constructor
@@ -74,7 +68,6 @@ class NeuroUV
 		//ROS Subscriber initialization
 		ros::Subscriber<controlvehicle::joy_control_msg> *rosTopic;
 		//Function Declaration
-		void setupTimer();
 		int freeRam();
 		void sensorsVelocity();
 		void tempsensorsVelocity();
@@ -83,21 +76,22 @@ class NeuroUV
 		void UARThandle();
 		// begin object to initialize build in objects
 		void begin();
+		// Calibrate imu
+		void imuCalibration();
 		// Initialize ROS
 		void initROS();
 		// main loop
 		void ROSloop();
 		void Debugloop();
 		// Check imu connection
-		void imuCheck();
+		void disableImu();
+		void checkSensors();
 		//Sort double array
 		void sort( double* n, int q );
 		//Check battery state
 		void batteryState();
 		// C driver handler
 		friend void DrivingHandle( const controlvehicle::joy_control_msg& drivingArgs);
-		// ISR friendly function
-		friend void TIMER5_COMPA_vect(void);
 
 	private:
 		// Ros initialization
@@ -105,8 +99,10 @@ class NeuroUV
 		// Robot control driver declaration
 		RobotControl* rb;
 		// Messages
-		controlvehicle::ardu_imu imu_msg;
 		controlvehicle::temperature tem_msg;
+		geometry_msgs::Quaternion quat_msg;
+		controlvehicle::ardu_imu imu_msg;
+		geometry_msgs::Vector3 euler_msg;
 		controlvehicle::Maxsonar son_msg;
 		std_msgs::String err_msg;
 		std_msgs::Int8 bat_msg;
@@ -122,10 +118,6 @@ class NeuroUV
 		float voltagestep;
 		double voltage;
 		int sensorValue;
-		// global safety counter
-		uint16_t saftyCounter;
-		// old counter value
-		uint16_t saftyCounterOld;
 		// Sensor shutdown
 		volatile uint8_t sensorOneShutdown;
 		volatile uint8_t sensorTwoShutdown;
@@ -140,8 +132,11 @@ class NeuroUV
 		unsigned long rerrMillis;
 		unsigned long rbatMillis;
 		unsigned long rdebMillis;
+		unsigned long rcheckMillis;
 		//Publishers
 		ros::Publisher *pub_imu;
+		ros::Publisher *pub_euler;
+		ros::Publisher *pub_quat;
 		ros::Publisher *pub_tem;
 		ros::Publisher *pub_son;
 		ros::Publisher *pub_err;

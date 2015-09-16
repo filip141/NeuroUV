@@ -41,23 +41,25 @@ NeuroUV::NeuroUV(){
 		rsonMillis = 0;
 		rerrMillis = 0;
 		rbatMillis = 0;
+		rdebMillis = 0;
 		// Robot control driver declaration
-		rb = new RobotControl(100);
-		// global safety counter initialization value
-		saftyCounter  = 0;
-		saftyCounterOld = 0;
+		rb = new RobotControl(50);
 		// Sensor shutdown values
 		sensorOneShutdown = 0;
 		sensorTwoShutdown = 0;
 		sensorThreeShutdown = 0;
 		sensorFourShutdown = 0;
 		imuShutdown = 0;
+
 		//Publishers initialization
 		pub_imu = new ros::Publisher("imu", &imu_msg);
 		pub_tem = new ros::Publisher("temperature", &tem_msg);
 		pub_son = new ros::Publisher("maxsonar", &son_msg);
 		pub_err = new ros::Publisher("error", &err_msg);
 		pub_bat = new ros::Publisher("battery", &bat_msg);
+		pub_euler = new ros::Publisher("eulers", &euler_msg);
+		pub_quat = new ros::Publisher("quaternions", &quat_msg);
+
 
 		//ROS Subscriber initialization
 		rosTopic = new ros::Subscriber<controlvehicle::joy_control_msg>( "joyvehicle", &DrivingHandle );
@@ -87,21 +89,36 @@ void NeuroUV::begin(){
 
 	  //Begin sensor objects
 	  Wire.begin();
-	  accelerometer.begin();
-	  compass.begin();
 
-	  // Setup timer
-	  setupTimer();
+	  imuCalibration();
 
-	  //Setting sensor objects
-	  gyro.enableDefault();
-	  gyro.writeReg(L3G4200D_CTRL_REG4, L3G4200D_2000DPS);
-	  accelerometer.setRange(ADXL345_RANGE_2G);
-	  compass.setRange(HMC5883L_RANGE_1_3GA);
-	  compass.setMeasurementMode(HMC5883L_CONTINOUS);
-	  compass.setDataRate(HMC5883L_DATARATE_30HZ);
-	  compass.setSamples(HMC5883L_SAMPLES_8);
-	  compass.setOffset(0, 0);
+}
+
+
+void NeuroUV::imuCalibration(){
+	// Calibrate Accelerometer
+	imu.ADXL345Cal();
+	delay(10);
+	// Accelerometer initialization
+	imu.ADXL345Init();
+	delay(10);
+	// Gyro initialization
+	imu.L3G4200DInit();
+	delay(10);
+	// Gyro calibration
+	imu.L3G4200DCal();
+	delay(10);
+	// Magnetometer initialization
+	imu.HMC5883LInit();
+	delay(10);
+	if(imu.HMC5883LTest()){
+		// For future logs
+	}
+	// Calibrate Magnetometer
+	delay(10);
+	rb->turnAround(140);
+	imu.HMC5883LCal();
+	rb->stopDriving();
 }
 
 // ROS initialization
@@ -117,6 +134,8 @@ void NeuroUV::initROS(){
 	  nh.advertise(*pub_son);
 	  nh.advertise(*pub_err);
 	  nh.advertise(*pub_bat);
+	  nh.advertise(*pub_euler);
+	  nh.advertise(*pub_quat);
 	  nh.getHardware()->setBaud(57600);
 }
 
@@ -131,6 +150,8 @@ void NeuroUV::ROSloop(){
 			imu_msg.header.frame_id =  "imu";
 			sensorsVelocity();
 			pub_imu->publish(&imu_msg);
+			pub_euler->publish(&euler_msg);
+			pub_quat->publish(&quat_msg);
 			nh.spinOnce();
 	}
 
@@ -170,13 +191,17 @@ void NeuroUV::ROSloop(){
 			rdebMillis = millis() + debstep;
 			UARThandle();
 	}
+	if (millis() >= rcheckMillis) {
 
-	saftyCounter = saftyCounter + 1;
+			rcheckMillis = millis() + checkstep;
+			checkSensors();
+	}
 
 }
 
 // Debug loop to check values without ros connection
 void NeuroUV::Debugloop(){
+
 
 	if (millis() >= rangeMillis && !imuShutdown) {
 
@@ -209,40 +234,14 @@ void NeuroUV::Debugloop(){
 			rdebMillis = millis() + debstep;
 			UARThandle();
 	}
+	if (millis() >= rcheckMillis) {
 
-	saftyCounter = saftyCounter + 1;
+			rcheckMillis = millis() + checkstep;
+			checkSensors();
+	}
+
 }
 
-// Setup timer5
-void NeuroUV::setupTimer(){
-  
-  //Stop interrupts 
-  cli();
-  
-  // Clear register 
-  TCCR5A = 0;
-  TCCR5B = 0;
-  
-  // Set timer compare value
-  OCR5A = 25000;
-  
-   // turn on CTC mode
-  TCCR5B |= (1 << WGM52);
-  
-   // Enable timer compare interrupt
-  TIMSK5 |= (1 << OCIE5A);
-  
-  // Set initial value
-  TCNT5H = 0x00;
-  TCNT5L = 0x00;
-  
-  // Set timer presacaler
-  TCCR5B |=  (1<<CS50) | (1<<CS51);
-  
-  // enable interrupts
-  sei();
-  
-}
 
 // Check ram capacity
  int NeuroUV::freeRam()
@@ -466,29 +465,52 @@ void NeuroUV::setupTimer(){
 
 //Fill sensor message
  void NeuroUV::sensorsVelocity(){
-    //Read Accelerometer
-    Vector scaledAcc = accelerometer.readScaled();
-    //Read Magnetometer
-    Vector mag = compass.readNormalize();
-    //Read Gyroscope
-    gyro.read();
-   
-    //Send Gyro to ROS and print on serial1
-    imu_msg.gyroValues.x = gyro.g.x * dpsPerDigit;
-    imu_msg.gyroValues.y = gyro.g.y * dpsPerDigit;
-    imu_msg.gyroValues.z = gyro.g.z * dpsPerDigit;
 
-   
+	int16_t ADXL345Buff[3];
+	int16_t L3G4200DBuff[3];
+	int16_t HMC5883LBuff[3];
+	Buffers buff;
+
+
+	imu.readAccelData(ADXL345Buff);
+	imu.ADXL345ReadData(ADXL345Buff, buff.ADXL345Res);
+	imu.readGyroData(L3G4200DBuff);
+	imu.L3G4200DReadData(L3G4200DBuff, buff.L3G4200DRes);
+	imu.readMagData(HMC5883LBuff);
+	imu.HMC5883LReadData(HMC5883LBuff, buff.HMC5883LRes);
+
+    //Send Gyro to ROS and print on serial1
+    imu_msg.gyroValues.x = buff.L3G4200DRes[0];
+    imu_msg.gyroValues.y = buff.L3G4200DRes[1];
+    imu_msg.gyroValues.z = buff.L3G4200DRes[2];
+
+
     //Send Acc to ROS and print on serial1
-    imu_msg.accValues.x = scaledAcc.XAxis;
-    imu_msg.accValues.y = scaledAcc.YAxis;
-    imu_msg.accValues.z = scaledAcc.ZAxis;
-   
+    imu_msg.accValues.x = buff.ADXL345Res[0];
+    imu_msg.accValues.y = buff.ADXL345Res[1];
+    imu_msg.accValues.z = buff.ADXL345Res[2];
+
     //Send Mag to ROS and print on serial1
-    imu_msg.magValues.x = mag.XAxis;
-    imu_msg.magValues.y = mag.YAxis;
-    imu_msg.magValues.z = mag.ZAxis;
- }
+    imu_msg.magValues.x = buff.HMC5883LRes[0];
+    imu_msg.magValues.y = buff.HMC5883LRes[1];
+    imu_msg.magValues.z = buff.HMC5883LRes[2];
+
+    // Send values to Magdwick algorithm
+    imu.sensorsCallback(buff);
+
+
+    // Set euler message
+    euler_msg.x = imu.euler.x;
+    euler_msg.y = imu.euler.y;
+    euler_msg.z = imu.euler.z;
+
+    // Set quat message
+    quat_msg.x = imu.quat.x;
+    quat_msg.y = imu.quat.y;
+    quat_msg.z = imu.quat.z;
+    quat_msg.w = imu.quat.w;
+
+}
 
  //Fill temperature.msg
  void NeuroUV::tempsensorsVelocity(){
@@ -579,46 +601,44 @@ void NeuroUV::setupTimer(){
 	}
  }
 
- void NeuroUV::imuCheck(){
-	 if(saftyCounter == saftyCounterOld && millis() > 2000){
-		 imuShutdown = 1;
-		 gyro.L3G4200DShutdown = 1;
-		 accelerometer.ADXL345Shutdown = 1;
-		 compass.HMC5883LShutdown = 1;
-	 }
-	 saftyCounterOld = saftyCounter;
+ void NeuroUV::disableImu(){
+	 imuShutdown = 1;
  }
 
 
- // Timer5 interrupt
-  ISR(TIMER5_COMPA_vect){
-
-     cli();
+ // Check sensors
+ void NeuroUV::checkSensors(){
 
      //Disable sensor One
-     if(NeuroSpace::neuroObject.son_msg.sonar1 == 0 && millis() > 1000){
-    	 NeuroSpace::neuroObject.sensorOneShutdown = 1;
+     if(son_msg.sonar1 == 0 && millis() > 2000){
+    	 sensorOneShutdown = 1;
      }
 
      // Disable Sensor Two
-     if(NeuroSpace::neuroObject.son_msg.sonar2 == 0 && millis() > 1000){
-    	 NeuroSpace::neuroObject.sensorTwoShutdown = 1;
+     if(son_msg.sonar2 == 0 && millis() > 2000){
+    	sensorTwoShutdown = 1;
      }
 
      //Disable Sensor Three
-     if(NeuroSpace::neuroObject.son_msg.sonar3 == 0 && millis() > 1000){
-    	 NeuroSpace::neuroObject.sensorThreeShutdown = 1;
+     if(son_msg.sonar3 == 0 && millis() > 2000){
+    	sensorThreeShutdown = 1;
      }
 
      //Disable Sensor Four
-     if(NeuroSpace::neuroObject.son_msg.sonar4 == 0 && millis() > 1000){
-    	 NeuroSpace::neuroObject.sensorFourShutdown = 1;
+     if(son_msg.sonar4 == 0 && millis() > 2000){
+    	 sensorFourShutdown = 1;
      }
-     // Check imu connection
-     NeuroSpace::neuroObject.imuCheck();
+//     // Check imu connection
+//     if(!imu.isOnline()  && millis() > 5000){
+//    	 disableImu();
+//     }
+//     else{
+//    	 if(imuShutdown){
+//    		 imuShutdown = 0;
+//    	 }
+//     }
 
-     sei();
-   };
+}
 
 
  // //Subscriber callback function
